@@ -39,6 +39,7 @@ Expr (
 Expr (
   Add (
     Int,
+    ArithOp,
     Int
   )
 )
@@ -49,6 +50,7 @@ Expr (
 Expr (
   Add (
     Int,
+    ArithOp,
     Int
   )
 )
@@ -786,8 +788,8 @@ Expr (
   IndentedString (
     IndentedStringContent,
     IndentedStringInterpolation (
-      ⚠,
-      CommentBlock
+      CommentBlock,
+      ⚠
     ),
     IndentedStringContent
   )

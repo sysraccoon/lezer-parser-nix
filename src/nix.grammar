@@ -1,4 +1,5 @@
-// Nix grammar for lezer-parser. MIT License (c) 2022 Milan Hauth
+// Nix grammar for lezer-parser.
+// MIT License (c) 2022 Milan Hauth, 2024 sysraccoon
 
 @top Expr { expr? }
 
@@ -11,6 +12,7 @@ expr
   | With { _WITH expr ';' expr }
   | Let { _LET bindings _IN expr } // syntax sugar: let a=1; in a -> (rec {a=1;}).a
   | LetOld { _LET '{' bindings '}' } // old let: let { x = 1; body = x; }
+  | Import { _IMPORT expr }
   | expr_if
   }
 
@@ -22,24 +24,24 @@ expr_if
   }
 
 expr_op
-  { Not      {                        '!' expr_op !prec_not }
-  | Neg      {                        '-' expr_op !prec_neg }
-  | Eq       { expr_op !prec_equal   '==' expr_op }
-  | NEq      { expr_op !prec_equal   '!=' expr_op }
-  | LT       { expr_op !prec_compare '<'  expr_op }
-  | LE       { expr_op !prec_compare '<=' expr_op }
-  | GT       { expr_op !prec_compare '>'  expr_op }
-  | GE       { expr_op !prec_compare '>=' expr_op }
-  | And      { expr_op !prec_and     '&&' expr_op }
-  | Or       { expr_op !prec_or      '||' expr_op }
-  | Imply    { expr_op !prec_impl    '->' expr_op }
-  | Update   { expr_op !prec_update  '//' expr_op }
-  | HasAttr  { expr_op !prec_hasAttr  '?' attrpath }
-  | Add      { expr_op !prec_plus     '+' expr_op } // concat strings, Add
-  | Sub      { expr_op !prec_callSub  '-' expr_op }
-  | Mul      { expr_op !prec_mul_div  '*' expr_op }
-  | Div      { expr_op !prec_mul_div  '/' expr_op }
-  | Concat   { expr_op !prec_concat  '++' expr_op } // concat lists
+  { Not      {                       LogicOp<'!'> expr_op !prec_not }
+  | Neg      {                       ArithOp<'-'> expr_op !prec_neg }
+  | Eq       { expr_op !prec_equal   LogicOp<'=='> expr_op }
+  | NEq      { expr_op !prec_equal   LogicOp<'!='> expr_op }
+  | LT       { expr_op !prec_compare LogicOp<'<'>  expr_op }
+  | LE       { expr_op !prec_compare LogicOp<'<='> expr_op }
+  | GT       { expr_op !prec_compare LogicOp<'>'>  expr_op }
+  | GE       { expr_op !prec_compare LogicOp<'>='> expr_op }
+  | And      { expr_op !prec_and     LogicOp<'&&'> expr_op }
+  | Or       { expr_op !prec_or      LogicOp<'||'> expr_op }
+  | Imply    { expr_op !prec_impl    ArithOp<'->'> expr_op }
+  | Update   { expr_op !prec_update  ArithOp<'//'> expr_op }
+  | HasAttr  { expr_op !prec_hasAttr LogicOp<'?'> attrpath }
+  | Add      { expr_op !prec_plus    ArithOp<'+'> expr_op } // concat strings, Add
+  | Sub      { expr_op !prec_callSub ArithOp<'-'> expr_op }
+  | Mul      { expr_op !prec_mul_div ArithOp<'*'> expr_op }
+  | Div      { expr_op !prec_mul_div ArithOp<'/'> expr_op }
+  | Concat   { expr_op !prec_concat  ArithOp<'++'> expr_op } // concat lists (this is not actually arithmetic operation)
 
   // TODO where should we handle paths? parse or eval?
   // copy of Path from expr_simple, to parse "1/2" as Path not Call(Int,Path)
@@ -48,6 +50,9 @@ expr_op
 
   | expr_app
   }
+
+ArithOp<expr> { expr }
+LogicOp<expr> { expr }
 
 expr_app
   { Call { expr_app !prec_apply expr_select }
@@ -119,7 +124,7 @@ expr_simple
 // strings
 
 StringInterpolation
-  { stringInterpolationStart expr stringInterpolationEnd
+  { StringInterpolationStart expr StringInterpolationEnd
   }
 
 IndentedStringInterpolation
@@ -128,7 +133,7 @@ IndentedStringInterpolation
 
 @external tokens string from "./tokens" {
   StringContent,
-  stringInterpolationStart,
+  StringInterpolationStart,
   stringEnd
 }
 
@@ -214,12 +219,11 @@ formal
   }
 
 
-
 // keywords
 
 // underscore or lowercase prefix -> anonymous token
 
-keyword<term> { @specialize<Identifier, term> }
+keyword<term> { @specialize[@name={term}]<Identifier, term> }
 
 TRUE { keyword<"true"> }
 FALSE { keyword<"false"> }
@@ -237,7 +241,7 @@ _OR_KW { keyword<"or"> }
 _INHERIT { keyword<"inherit"> }
 _REC { keyword<"rec"> }
 
-
+_IMPORT { keyword<"import"> }
 
 // @precedence is needed to fix
 // "Overlapping tokens A and B used in same context"
@@ -258,7 +262,7 @@ _REC { keyword<"rec"> }
   indentedStringInterpolationEnd { "}" }
 
   stringStart { '"' }
-  stringInterpolationEnd { "}" }
+  StringInterpolationEnd { "}" }
 
   whitespace { std.whitespace+ }
 
@@ -309,6 +313,11 @@ _REC { keyword<"rec"> }
   uriSchema { std.asciiLetter (std.asciiLetter | std.digit | "+" | "-")* }
   uriPath { (std.asciiLetter | std.digit | "%" | "/" | "?" | ":" | "@" | "&" | "=" | "+" | "$" | "," | "-" | "_" | "." | "!" | "~" | "*" | "'")+ }
   @precedence { URI, Identifier }
+
+  "..."[@name=Spread]
+  "="[@name=Equals]
+  "(" ")" "[" "]" "{" "}"
+  "." "," ";" ":" "@" 
 }
 
 

@@ -7,7 +7,7 @@ import {
 } from "@lezer/lr"
 import {
   IndentedStringContent, indentedStringInterpolationStart, indentedStringEnd,
-  StringContent, stringInterpolationStart, stringEnd,
+  StringContent, StringInterpolationStart, stringEnd,
 } from "./parser.terms.js"
 
 const space = [
@@ -25,8 +25,8 @@ const
 // based on javascript template parser
 // https://github.com/lezer-parser/javascript/blob/main/src/tokens.js
 export const indentedString = new ExternalTokenizer(input => {
-  for (let afterDollar = false, i = 0;; i++) {
-    let {next} = input
+  for (let afterDollar = false, i = 0; ; i++) {
+    let { next } = input
     if (devMode) console.log([
       `\ni = ${i}`,
       `next   = ${next} = ${JSON.stringify(String.fromCharCode(next))}`, // == input.peek(0)
@@ -92,8 +92,8 @@ export const indentedString = new ExternalTokenizer(input => {
 // based on javascript template parser
 // https://github.com/lezer-parser/javascript/blob/main/src/tokens.js
 export const string = new ExternalTokenizer(input => {
-  for (let afterDollar = false, i = 0;; i++) {
-    let {next} = input
+  for (let afterDollar = false, i = 0; ; i++) {
+    let { next } = input
     if (next < 0) {
       if (i) input.acceptToken(StringContent)
       break
@@ -102,7 +102,7 @@ export const string = new ExternalTokenizer(input => {
       else input.acceptToken(stringEnd, 1)
       break
     } else if (next == braceL && afterDollar) {
-      if (i == 1) input.acceptToken(stringInterpolationStart, 1)
+      if (i == 1) input.acceptToken(StringInterpolationStart, 1)
       else input.acceptToken(StringContent, -1)
       break
     } else if (next == newline && i) {
