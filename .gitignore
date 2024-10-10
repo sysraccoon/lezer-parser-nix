@@ -1,4 +1,7 @@
 /node_modules/
 /src/parser.*
 .tern-*
-/dist
+
+/dist/*
+!/dist/index.d.cts
+!/dist/index.d.ts
